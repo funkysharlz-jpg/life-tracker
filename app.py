@@ -9,18 +9,20 @@ st.set_page_config(page_title="Good Life Tracker", layout="wide")
 # --- SECURE CONNECTION ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- UPDATED CATEGORIES FROM YOUR FILE ---
-categories = {
-    "Overall wellbeing & actions": ["What was my overall wellbeing?", "Was I the person I want to be?"],
-    "Faith": ["Did I engage in spiritual practices?"],
+# --- EXACT DATA STRUCTURE FROM YOUR UPDATED FILE ---
+data_structure = {
+    "Overall wellbeing & actions": [
+        "What was my overall wellbeing?", 
+        "Was I the person I want to be?"
+    ],
     "Relationships & community": [
         "Did I love my partner well?", 
-        "Did I love my family well?", 
+        "Did I spend quality time with Caris?", 
+	"Did I spend quality time with Zara?", 
         "Did I love my friends well?", 
         "Did I contribute to society / the community?"
     ],
     "Mental health": [
-        "Did I do my morning routine?", 
         "How did I handle stress?", 
         "Did I spend 5+ minutes on mental health?"
     ],
@@ -31,7 +33,11 @@ categories = {
         "Did I eat healthy?", 
         "Did I work out?"
     ],
-    "Work": ["Did I enjoy work?", "How many hours did I work?", "Was I wise financially?"],
+    "Work": [
+        "Did I enjoy work?", 
+        "How many hours did I work?", 
+        "Was I wise financially?"
+    ],
     "Purpose & engagement": [
         "Did I experience meaning?", 
         "Did I experience positive emotions?", 
@@ -43,47 +49,78 @@ categories = {
         "Did I achieve my daily goals?"
     ],
     "Character & virtue": [
-        "Did I practice the virtues I am working on?", 
+        "Did I practice the virtues (kindness, patience) I am working on?", 
         "Was I of service or generous to others?", 
-        "Did I practice the habits I am building?"
+        "Did I practice gratitude today?"
     ],
-    "Entertainment": ["Was my engagement in hobbies & entertainment healthy?"]
+    "Entertainment": [
+        "Did I read today?", 
+	"Did I do some cross stitch today?"
+    ]
 }
 
-all_qs = [q for sub in categories.values() for q in sub]
+all_qs = [q for sub in data_structure.values() for q in sub]
 
 st.title("🌟 Good Life Tracker")
 
-tab1, tab2 = st.tabs(["Daily Entry", "Trends & Charts"])
+tab1, tab2 = st.tabs(["📝 Daily Entry", "📈 View Trends"])
 
 with tab1:
-    with st.form("entry_form"):
-        date_entry = st.date_input("Date", datetime.now())
-        entry_data = {"Date": date_entry.strftime('%Y-%m-%d')}
+    # Adding a clear_on_submit to reset the form after saving
+    with st.form("entry_form", clear_on_submit=True):
+        date_val = st.date_input("Date", datetime.now())
+        entry = {"Date": date_val.strftime('%Y-%m-%d')}
         
-        for cat, qs in categories.items():
-            st.subheader(cat)
-            for q in qs:
+        for category, questions in data_structure.items():
+            st.markdown(f"### {category}")
+            for q in questions:
+                # Logic to determine input type based on the question text
                 if "hours" in q.lower():
-                    entry_data[q] = st.number_input(q, min_value=0.0, max_value=24.0, step=0.5)
+                    entry[q] = st.number_input(q, min_value=0.0, max_value=24.0, step=0.5, key=q)
                 else:
-                    entry_data[q] = st.select_slider(q, options=[1,2,3,4,5], value=3)
+                    entry[q] = st.select_slider(q, options=[1, 2, 3, 4, 5], value=3, key=q)
+            st.divider()
         
-        if st.form_submit_button("Save Entry"):
+        submit = st.form_submit_button("Submit Daily Reflection")
+        
+        if submit:
             try:
                 # Read current data and append
-                df = conn.read()
-                new_row = pd.DataFrame([entry_data])
-                df = pd.concat([df, new_row], ignore_index=True)
-                conn.update(data=df)
-                st.success("Entry securely saved to Google Sheets!")
+                existing_df = conn.read()
+                new_row = pd.DataFrame([entry])
+                updated_df = pd.concat([existing_df, new_row], ignore_index=True)
+                
+                # Push back to Google Sheets
+                conn.update(data=updated_df)
+                st.success("Reflections securely saved to your Google Sheet!")
+                st.balloons()
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Save failed. Check your Secrets and Permissions: {e}")
 
 with tab2:
-    data = conn.read()
-    if not data.empty:
-        metric = st.selectbox("View progress for:", all_qs)
-        fig = px.line(data, x="Date", y=metric, markers=True, 
-                      color_discrete_sequence=["#00CC96"])
-        st.plotly_chart(fig, use_container_width=True)
+    try:
+        df_viz = conn.read()
+        if not df_viz.empty:
+            st.subheader("Visual History")
+            target_q = st.selectbox("Select metric to view:", all_qs)
+            
+            # Color-coded Bar Chart
+            fig = px.bar(
+                df_viz, 
+                x="Date", 
+                y=target_q, 
+                color=target_q,
+                color_continuous_scale='RdYlGn',
+                labels={target_q: "Score / Hours"},
+                title=f"Trend for: {target_q}"
+            )
+            
+            # Formatting for 1-5 scales vs Hours
+            if "hours" not in target_q.lower():
+                fig.update_layout(yaxis_range=[0, 5.5])
+                
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Your spreadsheet is currently empty. Submit an entry to see charts!")
+    except:
+        st.warning("Please ensure your Google Sheet is shared with the client email and Secrets are set.")
