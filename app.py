@@ -11,14 +11,16 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- UPDATED CATEGORIES FROM YOUR FILE ---
 categories = {
-    "Overall wellbeing & actions": ["What was my overall wellbeing?", "Was I the person I want to be?", "Did I feel engaged by what I was doing?", "Was I the person I want to be?"],
+    "Overall wellbeing & actions": ["What was my overall wellbeing?", "Was I the person I want to be?"],
+    "Faith": ["Did I engage in spiritual practices?"],
     "Relationships & community": [
         "Did I love my partner well?", 
-        "Did I spend enough time with Caris?", 
-        "Did I spend enough time with Zara?", 
-        "Did I love my friends well?"
+        "Did I love my family well?", 
+        "Did I love my friends well?", 
+        "Did I contribute to society / the community?"
     ],
     "Mental health": [
+        "Did I do my morning routine?", 
         "How did I handle stress?", 
         "Did I spend 5+ minutes on mental health?"
     ],
@@ -29,17 +31,23 @@ categories = {
         "Did I eat healthy?", 
         "Did I work out?"
     ],
-    "Work": ["Did I enjoy work?", "How many hours did I work?", "Was I wise financially?", "Was my mind stimulated / did I learn?", ],
+    "Work": ["Did I enjoy work?", "How many hours did I work?", "Was I wise financially?"],
     "Purpose & engagement": [
         "Did I experience meaning?", 
         "Did I experience positive emotions?", 
         "Did I feel engaged by what I was doing?"
     ],
-    "Character & virtue": [
-        "Did I practice the virtues (patience, kindness) I am working on?", 
-        "Did I practice the gratitude today?"
+    "Achievement & growth": [
+        "Did I have a sense of achievement?", 
+        "Was my mind stimulated / did I learn?", 
+        "Did I achieve my daily goals?"
     ],
-    "Entertainment": ["Did I read today?", "Did I do some cross stitch today? "]
+    "Character & virtue": [
+        "Did I practice the virtues I am working on?", 
+        "Was I of service or generous to others?", 
+        "Did I practice the habits I am building?"
+    ],
+    "Entertainment": ["Was my engagement in hobbies & entertainment healthy?"]
 }
 
 all_qs = [q for sub in categories.values() for q in sub]
